@@ -94,6 +94,29 @@ export const invite = [
   },
 ];
 
+export const getInvites = [
+  async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = (page - 1) * limit;
+
+      const invites = await Invite.find({})
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }) // newest first
+        .lean();
+
+      const total = await Invite.countDocuments();
+
+      res.status(200).json({ invites, total, page, limit });
+    } catch (err) {
+      console.error('Error fetching invites:', err);
+      res.status(500).json({ message: 'Server error while fetching invites' });
+    }
+  },
+];
+
 export const registerViaInvite = [
   body("token").notEmpty().withMessage("Token required"),
   body("name").trim().notEmpty().withMessage("Name required"),
