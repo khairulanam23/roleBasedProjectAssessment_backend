@@ -17,7 +17,21 @@ const app = express();
 app.use(helmet());
 
 // CORS - allow frontend origin in prod
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000" }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000", // local dev
+      "https://rbpafrontend.netlify.app", // your Netlify URL
+      "https://your-vercel-domain.vercel.app", // your Vercel preview/prod URL (add after deploying to Vercel)
+      "https://your-vercel-domain-git-main-yourusername.vercel.app", // preview URLs
+    ],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // if you use cookies later
+  }),
+);
+
+app.options("*", cors());
 
 app.use(express.json());
 app.use(loggerMiddleware); // Request logging
