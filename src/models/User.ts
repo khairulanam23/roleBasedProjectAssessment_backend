@@ -8,6 +8,7 @@ export interface IUser extends Document {
   status: "ACTIVE" | "INACTIVE";
   invitedAt?: Date;
   createdAt: Date;
+  isDeleted: boolean;
 }
 
 const userSchema = new Schema<IUser>({
@@ -18,6 +19,7 @@ const userSchema = new Schema<IUser>({
   status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
   invitedAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
+  isDeleted: { type: Boolean, default: false },
 });
 
 export default model<IUser>("User", userSchema);

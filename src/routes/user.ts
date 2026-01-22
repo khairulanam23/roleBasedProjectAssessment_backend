@@ -4,6 +4,7 @@ import {
   updateRole,
   updateStatus,
   getSelf,
+  deleteUser,
 } from "../controllers/user"; // FIXED: added getSelf here
 import authMiddleware from "../middlewares/auth";
 import roleMiddleware from "../middlewares/role";
@@ -31,5 +32,7 @@ router.patch(
   roleMiddleware(["ADMIN"]),
   updateStatus,
 );
+
+router.delete('/:id', authMiddleware, roleMiddleware(['ADMIN']), deleteUser);
 
 export default router;

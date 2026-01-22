@@ -1,27 +1,21 @@
 import { Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import User from "../models/User";
-import { AuthRequest } from "../middlewares/auth"; // Make sure this is imported (from auth.ts)
+import { AuthRequest } from "../middlewares/auth";
 
 export const getUsers = async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
 
-    const users = await User.find({})
-      .skip(skip)
-      .limit(limit)
-      .select("-password -__v")
-      .lean(); // faster, plain JS objects
+  const users = await User.find({ isDeleted: false })
+    .skip(skip)
+    .limit(limit)
+    .select("-password -__v")
+    .lean();
 
-    const total = await User.countDocuments();
-
-    res.status(200).json({ users, total, page, limit });
-  } catch (err) {
-    console.error("Error fetching users:", err);
-    res.status(500).json({ message: "Server error while fetching users" });
-  }
+  const total = await User.countDocuments({ isDeleted: false });
+  res.json({ users, total, page, limit });
 };
 
 export const updateRole = [
@@ -102,4 +96,17 @@ export const getSelf = async (req: AuthRequest, res: Response) => {
       .status(500)
       .json({ message: "Server error while fetching user profile" });
   }
+};
+
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const user = await User.findByIdAndUpdate(
+    id,
+    { isDeleted: true, status: "INACTIVE" },
+    { new: true },
+  );
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  res.json({ message: "User deleted successfully" });
 };

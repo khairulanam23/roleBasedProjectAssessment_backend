@@ -77,7 +77,7 @@ export const invite = [
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // FIXED: 10 minutes
 
     const invite = new Invite({ email, role, token, expiresAt });
     await invite.save();
@@ -111,8 +111,8 @@ export const getInvites = [
 
       res.status(200).json({ invites, total, page, limit });
     } catch (err) {
-      console.error('Error fetching invites:', err);
-      res.status(500).json({ message: 'Server error while fetching invites' });
+      console.error("Error fetching invites:", err);
+      res.status(500).json({ message: "Server error while fetching invites" });
     }
   },
 ];
@@ -162,6 +162,10 @@ export const registerViaInvite = [
     // Mark invite as accepted
     invite.acceptedAt = new Date();
     await invite.save();
+    res.status(201).json({
+      message: "Invite sent successfully",
+      token, // ← add this line
+    });
 
     return res.status(201).json({
       message: "User registered successfully",
