@@ -18,7 +18,7 @@ export const login = [
 
     const { email, password } = req.body;
 
-    // CRITICAL FIX: We NEED the password → use +password to force include
+    // CRITICAL: Force-include password (in case schema has select: false)
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -37,7 +37,7 @@ export const login = [
     const token = jwt.sign(
       { id: user._id.toString(), role: user.role },
       process.env.JWT_SECRET as string,
-      { expiresIn: "24h" }, // increased for better UX
+      { expiresIn: "24h" }, // Good duration for assessment task
     );
 
     return res.json({ token });
@@ -56,64 +56,41 @@ export const invite = [
 
     const { email, role } = req.body;
 
-    // Prevent duplicate user
+    // Prevent inviting existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ message: "A user with this email already exists" });
+      return res.status(409).json({
+        message: "A user with this email already exists",
+      });
     }
 
-    // Prevent multiple active invites
+    // Prevent duplicate active invites
     const existingInvite = await Invite.findOne({
       email,
       acceptedAt: null,
       expiresAt: { $gt: new Date() },
     });
     if (existingInvite) {
-      return res
-        .status(409)
-        .json({ message: "An active invite already exists for this email" });
+      return res.status(409).json({
+        message: "An active invite already exists for this email",
+      });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // FIXED: 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // FIXED: 10 minutes expiration
 
     const invite = new Invite({ email, role, token, expiresAt });
     await invite.save();
 
-    // SIMULATED EMAIL (as allowed by task)
-    console.log(
-      `\nINVITE LINK → http://localhost:3000/register?token=${token}\n`,
-    );
+    // Simulated email (PDF allows this)
+    const inviteLink = `https://rbpafrontend.netlify.app/register?token=${token}`;
+    console.log(`\nINVITE LINK → ${inviteLink}\n`);
 
+    // Return token so frontend can copy the link
     return res.status(201).json({
-      message: "Invite created successfully",
-      inviteLink: `http://localhost:3000/register?token=${token}`, // optional for testing
+      message: "Invite sent successfully",
+      token, // Frontend needs this for clipboard copy
     });
-  },
-];
-
-export const getInvites = [
-  async (req: Request, res: Response) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
-
-      const invites = await Invite.find({})
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 }) // newest first
-        .lean();
-
-      const total = await Invite.countDocuments();
-
-      res.status(200).json({ invites, total, page, limit });
-    } catch (err) {
-      console.error("Error fetching invites:", err);
-      res.status(500).json({ message: "Server error while fetching invites" });
-    }
   },
 ];
 
@@ -162,10 +139,6 @@ export const registerViaInvite = [
     // Mark invite as accepted
     invite.acceptedAt = new Date();
     await invite.save();
-    res.status(201).json({
-      message: "Invite sent successfully",
-      token, // ← add this line
-    });
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -176,5 +149,28 @@ export const registerViaInvite = [
         role: user.role,
       },
     });
+  },
+];
+
+export const getInvites = [
+  async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = (page - 1) * limit;
+
+      const invites = await Invite.find({})
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }) // newest first
+        .lean();
+
+      const total = await Invite.countDocuments();
+
+      res.status(200).json({ invites, total, page, limit });
+    } catch (err) {
+      console.error("Error fetching invites:", err);
+      res.status(500).json({ message: "Server error while fetching invites" });
+    }
   },
 ];
