@@ -4,18 +4,24 @@ import User from "../models/User";
 import { AuthRequest } from "../middlewares/auth";
 
 export const getUsers = async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
-  const users = await User.find({ isDeleted: false })
-    .skip(skip)
-    .limit(limit)
-    .select("-password -__v")
-    .lean();
+    const users = await User.find({ isDeleted: false }) // Ensures admin is visible unless deleted
+      .skip(skip)
+      .limit(limit)
+      .select("-password -__v")
+      .lean();
 
-  const total = await User.countDocuments({ isDeleted: false });
-  res.json({ users, total, page, limit });
+    const total = await User.countDocuments({ isDeleted: false });
+
+    res.json({ users, total, page, limit });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const updateRole = [
