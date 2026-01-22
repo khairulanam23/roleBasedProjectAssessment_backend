@@ -20,18 +20,17 @@ app.use(helmet());
 app.use(
   cors({
     origin: [
-      "http://localhost:3000", // local dev
-      "https://rbpafrontend.netlify.app", // your Netlify URL
-      "https://your-vercel-domain.vercel.app", // your Vercel preview/prod URL (add after deploying to Vercel)
-      "https://your-vercel-domain-git-main-yourusername.vercel.app", // preview URLs
+      "http://localhost:3000",
+      "https://rbpafrontend.netlify.app",
+      "https://rbpafrontend.vercel.app/",
     ],
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // if you use cookies later
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   }),
 );
-
-app.options("*", cors());
 
 app.use(express.json());
 app.use(loggerMiddleware); // Request logging
