@@ -1,17 +1,30 @@
 import { Router } from "express";
-import { getUsers, updateRole, updateStatus } from "../controllers/user";
+import {
+  getUsers,
+  updateRole,
+  updateStatus,
+  getSelf,
+} from "../controllers/user"; // FIXED: added getSelf here
 import authMiddleware from "../middlewares/auth";
 import roleMiddleware from "../middlewares/role";
 
 const router = Router();
 
+// Admin-only: list all users (paginated)
 router.get("/", authMiddleware, roleMiddleware(["ADMIN"]), getUsers);
+
+// Protected: get current authenticated user (used by frontend useAuth hook)
+router.get("/self", authMiddleware, getSelf);
+
+// Admin-only: change role
 router.patch(
   "/:id/role",
   authMiddleware,
   roleMiddleware(["ADMIN"]),
   updateRole,
 );
+
+// Admin-only: change status (activate/deactivate)
 router.patch(
   "/:id/status",
   authMiddleware,
